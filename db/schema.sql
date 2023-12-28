@@ -1,4 +1,4 @@
-create table users (
+create table ships (
     id bigserial primary key, -- auto incrementing id
-    username varchar(255) not null
-)
+    type text not null
+);

@@ -1,1 +1,2 @@
-select * from users;
+-- name: GetShips :many
+select * from ships;

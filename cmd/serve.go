@@ -1,8 +1,7 @@
 package cmd
 
 import (
-	"fmt"
-
+	"github.com/hazzardr/spacetraders/server"
 	"github.com/spf13/cobra"
 )
 
@@ -14,7 +13,7 @@ var serveCmd = &cobra.Command{
 
 	to the spacetraders API. Usage of the http server can be found in the rest-api.yaml document.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("serve called")
+		server.StartServer()
 	},
 }
 

@@ -23,9 +23,11 @@ paths:
               schema:
                 type: object
                 properties:
-                  user_id:
+                  id:
                     type: integer
-                  user_name:
+                  type:
                     type: string
-      operationId: get-users-user_id
-      description: Retrieve a specific user by ID
+                  location:
+                    type: string
+      operationId: getShip-ship_id
+      description: Retrieve a specific ship by ID
