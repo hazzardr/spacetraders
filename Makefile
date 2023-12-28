@@ -36,9 +36,12 @@ doctor:
 		echo "`sqlc` is not installed. Please run 'make deps'."; \
 		exit 1; \
 	fi
-
 	@if ! command -v docker &> /dev/null; then \
 		echo "`docker` is not installed. Please install it first."; \
+		exit 1; \
+	fi
+	@if ! command -v golangci-lint &> /dev/null; then \
+		echo "`golangci-lint` is not installed. Please install it first."; \
 		exit 1; \
 	fi
 	@echo "Local environment OK"
@@ -49,6 +52,7 @@ deps:
 	@echo "Installing dependencies..."
 	@go install github.com/spf13/cobra-cli@latest
 	@go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
 	@echo "Done!"
 
 .PHONY: build ## build the project
@@ -91,4 +95,9 @@ docker:
 	@docker build -t $(PROJECT_NAME) .
 	@echo "Done!"
 
+.PHONY: lint ## run linters
+lint:
+	@echo "Running linters..."
+	@golangci-lint run
+	@echo "Done!"
 # TODO: test, migrate, seed
