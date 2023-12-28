@@ -13,10 +13,6 @@ help:
 	@echo "Commands:"
 	@grep '^.PHONY: ' Makefile | sed 's/.PHONY: //' | awk '{split($$0,a," ## "); printf "  \033[34m%0-10s\033[0m %s\n", a[1], a[2]}'
 
-.PHONY: run ## Run the project
-run:
-	@go run cmd/main.go
-
 .PHONY: doctor ## checks if local environment is ready for development
 doctor:
 	@echo "Checking local environment..."
@@ -58,7 +54,7 @@ deps:
 .PHONY: build ## build the project
 build:
 	@echo "Building..."
-	@go build -o $(EXEC_NAME) ./cmd/main.go
+	@go build -o $(EXEC_NAME) ./main.go
 	@echo "Done!"
 
 .PHONY: clean ## delete generated code
