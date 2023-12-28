@@ -57,7 +57,6 @@ deps:
 
 .PHONY: build ## build the project
 build:
-	$(MAKE) generate
 	@echo "Building..."
 	@go build -o $(EXEC_NAME) ./cmd/main.go
 	@echo "Done!"
@@ -79,14 +78,14 @@ generate-server:
 	@sqlc generate -f sqlc.yaml
 	@echo "Generating server code..."
 	@mkdir -p generated/api
-	@oapi-codegen -generate types,server -o generated/api/server_gen.go openapi.yaml
+	@oapi-codegen -generate types,chi-server rest-api.yaml > ./generated/api/server_gen.go
 	@echo "Done!"
 
 .PHONY: generate-client ## generate go code based on spacetrader openapi
 generate-client:
 	@echo "Generating spacetraders client..."
 	@mkdir -p generated/spacetraders
-	@oapi-codegen -generate types,client -o generated/spacetraders/client_gen.go $(SPACE_TRADERS_OPENAPI_URL)
+	@oapi-codegen -generate types,client $(SPACE_TRADERS_OPENAPI_URL) > generated/spacetraders/client_gen.go
 	@echo "Done!"
 
 .PHONY: docker ## build docker image
@@ -100,4 +99,5 @@ lint:
 	@echo "Running linters..."
 	@golangci-lint run
 	@echo "Done!"
+
 # TODO: test, migrate, seed
