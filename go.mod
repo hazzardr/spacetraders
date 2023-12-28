@@ -3,6 +3,7 @@ module github.com/hazzardr/spacetraders
 go 1.21.0
 
 require (
+	github.com/deepmap/oapi-codegen v1.16.2 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
