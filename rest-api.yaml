@@ -5,6 +5,24 @@ info:
   servers:
     - url: 'http://localhost:8080'
 paths:
+  '/agents':
+    post:
+      summary: create agent
+      tags: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentRequest'
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+      operationId: createAgent
+      description: Create a new agent
   '/agents/{callSign}':
     parameters:
       - schema:
@@ -58,10 +76,25 @@ components:
               type: string
             credits:
               type: integer
+      AgentRequest:
+        type: object
+        required:
+          - faction
+          - headquarters
+          - callSign
+        properties:
+          faction:
+            type: string
+          headquarters:
+            type: string
+          callSign:
+            type: string
+          credits:
+            type: integer
       Ship:
         type: object
         properties:
-            id:
-              type: integer
-            location:
-              type: string
+          id:
+            type: integer
+          location:
+            type: string

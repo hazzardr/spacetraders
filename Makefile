@@ -60,7 +60,13 @@ deps:
 .PHONY: build ## build the project
 build:
 	@echo "Building..."
-	@go build -o $(EXEC_NAME) ./main.go
+	@go build -gcflags "all=-N -l" -o $(EXEC_NAME)
+	@echo "Done!"
+
+.PHONY: run ## run the project
+run:
+	@echo "Running..."
+	@go run main.go serve
 	@echo "Done!"
 
 .PHONY: clean ## delete generated code
