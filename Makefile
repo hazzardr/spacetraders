@@ -69,22 +69,13 @@ clean:
 	@rm -rf generated
 	@echo "Done!"
 
-.PHONY: generate ## generates boilerplate
+.PHONY: generate ## generates boilerplate models for db, api, and spacetraders client
 generate:
-	$(MAKE) generate-server
-	$(MAKE) generate-client
-
-.PHONY: generate-server ## generate server and database code
-generate-server:
 	@echo "Generating database models..."
 	@sqlc generate -f sqlc.yaml
 	@echo "Generating server code..."
 	@mkdir -p generated/api
 	@oapi-codegen -generate types,chi-server rest-api.yaml > ./generated/api/server_gen.go
-	@echo "Done!"
-
-.PHONY: generate-client ## generate go code based on spacetrader openapi
-generate-client:
 	@echo "Generating spacetraders client..."
 	@mkdir -p generated/spacetraders
 	@oapi-codegen -generate types,client $(SPACE_TRADERS_OPENAPI_URL) > generated/spacetraders/client_gen.go
@@ -100,6 +91,12 @@ db:
 migrate:
 	@echo "Running migrations..."
 	@migrate -path ./db/migrations -database "postgresql://$(POSTGRES_URL)" up
+	@echo "Done!"
+
+.PHONY: migrate-down ## tear down database migrations
+migrate-down:
+	@echo "Running migrations..."
+	@migrate -path ./db/migrations -database "postgresql://$(POSTGRES_URL)" down
 	@echo "Done!"
 
 .PHONY: create-migration ## create a new db migration. Usage: make create-migration name=<migration_name>

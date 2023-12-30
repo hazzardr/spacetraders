@@ -1,2 +1,1 @@
-drop table ships;
-drop table agents;
+drop schema spacetraders cascade;
