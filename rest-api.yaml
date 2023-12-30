@@ -5,6 +5,25 @@ info:
   servers:
     - url: 'http://localhost:8080'
 paths:
+  '/agents/{callSign}':
+    parameters:
+      - schema:
+          type: string
+        name: callSign
+        in: path
+        required: true
+    get:
+      summary: agent information
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+      operationId: getAgent-callSign
+      description: Retrieve a specific agent by call sign
   '/ships/{ship_id}':
     parameters:
       - schema:
@@ -21,13 +40,28 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  id:
-                    type: integer
-                  type:
-                    type: string
-                  location:
-                    type: string
+                $ref: '#/components/schemas/Ship'
       operationId: getShip-ship_id
       description: Retrieve a specific ship by ID
+components:
+    schemas:
+      Agent:
+        type: object
+        properties:
+            id:
+              type: integer
+            faction:
+              type: string
+            headquarters:
+              type: string
+            callSign:
+              type: string
+            credits:
+              type: integer
+      Ship:
+        type: object
+        properties:
+            id:
+              type: integer
+            location:
+              type: string

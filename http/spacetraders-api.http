@@ -15,3 +15,12 @@ Content-Type: application/json
 
 ###
 
+# curl 'https://api.spacetraders.io/v2/my/agent'
+# --header 'Authorization: Bearer INSERT_TOKEN_HERE'
+GET https://api.spacetraders.io/v2/my/agent
+Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZGVudGlmaWVyIjoiU0hVR0dJRSIsInZlcnNpb24iOiJ2Mi4xLjQiLCJyZXNldF9kYXRlIjoiMjAyMy0xMi0xNiIsImlhdCI6MTcwMzc4MzcyOCwic3ViIjoiYWdlbnQtdG9rZW4ifQ.bbRBId5HuWCNvDtMG5kGrfN7wCCoYdbb0Tcq0p3krNB5_EQVaMkUeW6zpGIzeVZTL5AnMtczBRl6nQIQOmQHKn1TwIEWvqK5l0Rf6-YF8GvvHzIqRnWQnpnfRfKhIyBIhNsLmgnYb7KIqEs6w83C0MKBx4aioUL8X1Sa69xzLOasgYFiH_D8X0I50r16fNMxCCW-OTvlMaCBdUklbhxx_XiYmGG9iQ-deRvC0NdpkVP8oc2tiCCQmLl559AFEM8sXodaU8ANGBEz1XNevveT1Shk1pJmFHtAxYYz99fQUm7gpjaJt4dvzDtPPY0HLevpaQ4vOr3-gPbsFTSZyuhjLQ
+
+###
+
+
+

@@ -1,6 +1,7 @@
 PROJECT_NAME := "spacetraders"
 EXEC_NAME := spacetraders
 SPACE_TRADERS_OPENAPI_URL := "https://stoplight.io/api/v1/projects/spacetraders/spacetraders/nodes/reference/SpaceTraders.json?fromExportButton=true&snapshotType=http_service&deref=optimizedBundle"
+POSTGRES_URL := "spacetraders:spacetraders@localhost:5432/spacetraders?sslmode=disable"
 
 .PHONY: help ## print this
 help:
@@ -40,6 +41,10 @@ doctor:
 		echo "`golangci-lint` is not installed. Please install it first."; \
 		exit 1; \
 	fi
+	@if ! command -v migrate &> /dev/null; then \
+		echo "`migrate` is not installed. Please run `make deps`."; \
+		exit 1; \
+	fi
 	@echo "Local environment OK"
 
 
@@ -48,6 +53,7 @@ deps:
 	@echo "Installing dependencies..."
 	@go install github.com/spf13/cobra-cli@latest
 	@go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+	@go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
 	@echo "Done!"
 
@@ -84,11 +90,24 @@ generate-client:
 	@oapi-codegen -generate types,client $(SPACE_TRADERS_OPENAPI_URL) > generated/spacetraders/client_gen.go
 	@echo "Done!"
 
-.PHONY: docker ## build docker image
-docker:
-	@echo "Building docker image..."
-	@docker build -t $(PROJECT_NAME) .
+.PHONY: db ## starts postgres database
+db:
+	@echo "Setting up database..."
+	@docker-compose up -d
 	@echo "Done!"
+
+.PHONY: migrate ## run database migrations
+migrate:
+	@echo "Running migrations..."
+	@migrate -path ./db/migrations -database "postgresql://$(POSTGRES_URL)" up
+	@echo "Done!"
+
+.PHONY: create-migration ## create a new db migration. Usage: make create-migration name=<migration_name>
+create-migration:
+	@echo "Creating migration..."
+	@migrate create -ext sql -dir ./db/migrations -seq $(name)
+	@echo "Done!"
+
 
 .PHONY: lint ## run linters
 lint:
