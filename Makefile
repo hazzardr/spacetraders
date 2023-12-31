@@ -81,7 +81,7 @@ generate:
 	@sqlc generate -f sqlc.yaml
 	@echo "Generating server code..."
 	@mkdir -p generated/api
-	@oapi-codegen -generate types,chi-server rest-api.yaml > ./generated/api/server_gen.go
+	@oapi-codegen -generate types,server rest-api.yaml > ./generated/api/server_gen.go
 	@echo "Generating spacetraders client..."
 	@mkdir -p generated/spacetraders
 	@oapi-codegen -generate types,client $(SPACE_TRADERS_OPENAPI_URL) > generated/spacetraders/client_gen.go
