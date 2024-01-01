@@ -21,5 +21,5 @@ GET https://api.spacetraders.io/v2/my/agent
 
 ###
 
-
+GET https://api.spacetraders.io/game/status
 

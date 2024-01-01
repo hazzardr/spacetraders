@@ -91,6 +91,9 @@ components:
             type: string
           credits:
             type: integer
+          expiresOn:
+            type: string
+            format: date
       Ship:
         type: object
         properties:

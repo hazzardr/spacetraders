@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
+	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
 	restApi "github.com/hazzardr/spacetraders/generated/api"
 	"github.com/hazzardr/spacetraders/generated/domain"
 	spaceTraders "github.com/hazzardr/spacetraders/generated/spacetraders"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -74,18 +76,23 @@ func StartServer() {
 		panic(fmt.Errorf("failed to load configuration, error=%w", err))
 	}
 
-	dbo, err := newDBO(config.DatabaseUrl)
-	if err != nil {
-		panic(err)
-	}
-
 	e := echo.New()
 	e.Use(middleware.Logger(), middleware.Recover(), middleware.TimeoutWithConfig(middleware.TimeoutConfig{
 		ErrorMessage: "Request timed out",
 		Timeout:      60 * time.Second,
 	}))
 
-	restApi.RegisterHandlers(e, &Routes{operations: dbo})
+	dbo, err := newDBO(config.DatabaseUrl)
+	if err != nil {
+		panic(err)
+	}
+
+	stc, err := newSpaceTradersClient(config)
+
+	restApi.RegisterHandlers(e, &Routes{
+		DBOperations:      dbo,
+		SpaceTraderClient: stc,
+	})
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
@@ -101,12 +108,52 @@ func StartServer() {
 }
 
 type Routes struct {
-	operations *DatabaseOperations
+	SpaceTraderClient *spaceTraders.ClientWithResponses
+	DBOperations      *DatabaseOperations
 }
 
 func (r Routes) CreateAgent(ctx echo.Context) error {
-	//TODO implement me
-	panic("implement me")
+	a := new(restApi.AgentRequest)
+	if err := ctx.Bind(a); err != nil {
+		return err
+	}
+
+	// Should eventually check for bounds on `int` vs `int32` (32 is db type)
+	if a.Credits == nil {
+		a.Credits = new(int)
+		*a.Credits = 0
+	}
+
+	if a.ExpiresOn == nil {
+		response, err := r.SpaceTraderClient.GetStatusWithResponse(ctx.Request().Context())
+		if err != nil {
+			return err
+		}
+		if nil == response {
+			return echo.NewHTTPError(http.StatusInternalServerError, "SpaceTraders API returned nil response")
+		}
+
+		nextReset, err := time.Parse(time.RFC3339, response.JSON200.ServerResets.Next)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusUnprocessableEntity, "No expires_on provided and unable to parse next reset time from SpaceTraders API")
+		}
+
+		a.ExpiresOn = new(openapi_types.Date)
+		*a.ExpiresOn = openapi_types.Date{Time: nextReset}
+	}
+
+	agent, err := r.DBOperations.queries.InsertAgent(ctx.Request().Context(), domain.InsertAgentParams{
+		CallSign:     a.CallSign,
+		Faction:      a.Faction,
+		Headquarters: a.Headquarters,
+		Credits:      int32(*a.Credits),
+		ExpiresOn:    pgtype.Date{Time: a.ExpiresOn.Time},
+	})
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusCreated, agent)
 }
 
 func (r Routes) GetAgentCallSign(ctx echo.Context, callSign string) error {
