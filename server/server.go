@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
-	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
 	restApi "github.com/hazzardr/spacetraders/generated/api"
 	"github.com/hazzardr/spacetraders/generated/domain"
 	spaceTraders "github.com/hazzardr/spacetraders/generated/spacetraders"
+	"github.com/hazzardr/spacetraders/server/handlers"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -31,8 +30,30 @@ type Config struct {
 }
 
 type DatabaseOperations struct {
-	db      *pgxpool.Pool
-	queries *domain.Queries
+	DB      *pgxpool.Pool
+	Queries *domain.Queries
+}
+
+func (dbo *DatabaseOperations) HandlePGError(err error) error {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		if pgErr.Code == pgerrcode.UniqueViolation {
+			return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Cannot insert new record. code=%s, message=%s", pgErr.Code, pgErr.Message))
+		} else if pgerrcode.IsConnectionException(pgErr.Code) {
+			return echo.NewHTTPError(http.StatusServiceUnavailable, fmt.Sprintf("Database connection error, please try again later. code=%s, message=%s", pgErr.Code, pgErr.Message))
+		} else if pgerrcode.IsDataException(pgErr.Code) {
+			return echo.NewHTTPError(http.StatusUnprocessableEntity, fmt.Sprintf("Failure processing request. code=%s, message=%s", pgErr.Code, pgErr.Message))
+		} else {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Unhandled Postgres error. code=%s message=%s", pgErr.Code, pgErr.Message))
+		}
+	}
+
+	return err
+}
+
+type Routes struct {
+	AgentsHandler *handlers.AgentsHandler
+	ShipsHandler  *handlers.ShipsHandler
 }
 
 func newDBO(dbUrl string) (*DatabaseOperations, error) {
@@ -48,7 +69,7 @@ func newDBO(dbUrl string) (*DatabaseOperations, error) {
 
 	q := domain.New(conn)
 
-	return &DatabaseOperations{db: conn, queries: q}, nil
+	return &DatabaseOperations{DB: conn, Queries: q}, nil
 }
 
 func newSpaceTradersClient(config Config) (*spaceTraders.ClientWithResponses, error) {
@@ -94,8 +115,14 @@ func StartServer() {
 	stc, err := newSpaceTradersClient(config)
 
 	restApi.RegisterHandlers(e, &Routes{
-		DBOperations:      dbo,
-		SpaceTraderClient: stc,
+		&handlers.AgentsHandler{
+			DBOperations:      dbo,
+			SpaceTraderClient: stc,
+		},
+		&handlers.ShipsHandler{
+			DBOperations:      dbo,
+			SpaceTraderClient: stc,
+		},
 	})
 
 	stop := make(chan os.Signal, 1)
@@ -107,92 +134,18 @@ func StartServer() {
 	}()
 
 	<-stop
-	dbo.db.Close()
+	dbo.DB.Close()
 	log.Println("Server stopped")
 }
 
-type Routes struct {
-	SpaceTraderClient *spaceTraders.ClientWithResponses
-	DBOperations      *DatabaseOperations
-}
-
 func (r Routes) CreateAgent(ctx echo.Context) error {
-	a := new(restApi.AgentRequest)
-	if err := ctx.Bind(a); err != nil {
-		return err
-	}
-
-	// Should eventually check for bounds on `int` vs `int32` (32 is db type)
-	if a.Credits == nil {
-		a.Credits = new(int)
-		*a.Credits = 0
-	}
-
-	if a.ExpiresOn == nil {
-		response, err := r.SpaceTraderClient.GetStatusWithResponse(ctx.Request().Context())
-		if err != nil {
-			return err
-		}
-		if nil == response {
-			return echo.NewHTTPError(http.StatusInternalServerError, "SpaceTraders API returned nil response")
-		}
-		if response.HTTPResponse.StatusCode != http.StatusOK {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch status from SpaceTraders API responseCode=%d message=%s", response.HTTPResponse.StatusCode, response.HTTPResponse.Status))
-		}
-
-		nextReset, err := time.Parse(time.RFC3339, response.JSON200.ServerResets.Next)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusUnprocessableEntity, "No expires_on provided and unable to parse next reset time from SpaceTraders API")
-		}
-
-		a.ExpiresOn = new(openapi_types.Date)
-		*a.ExpiresOn = openapi_types.Date{Time: nextReset}
-	}
-
-	date := pgtype.Date{Time: a.ExpiresOn.Time, Valid: true}
-	agent, err := r.DBOperations.queries.InsertAgent(ctx.Request().Context(), domain.InsertAgentParams{
-		CallSign:     a.CallSign,
-		Faction:      a.Faction,
-		Headquarters: a.Headquarters,
-		Credits:      int32(*a.Credits),
-		ExpiresOn:    date,
-	})
-
-	if err != nil {
-		return err
-	}
-
-	return ctx.JSON(http.StatusCreated, agent)
+	return r.AgentsHandler.CreateAgent(ctx)
 }
 
 func (r Routes) GetAgentCallSign(ctx echo.Context, callSign string) error {
-	//TODO: clean input
-	agent, err := r.DBOperations.queries.GetAgentByCallsign(ctx.Request().Context(), callSign)
-	if err != nil {
-		return handlePGError(err)
-	}
-
-	return ctx.JSON(http.StatusOK, agent)
+	return r.AgentsHandler.GetAgentCallSign(ctx, callSign)
 }
 
 func (r Routes) GetShipShipId(ctx echo.Context, shipId int) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func handlePGError(err error) error {
-	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) {
-		if pgErr.Code == pgerrcode.UniqueViolation {
-			return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Cannot insert new record: %s", pgErr.Message))
-		} else if pgerrcode.IsConnectionException(pgErr.Code) {
-			return echo.NewHTTPError(http.StatusServiceUnavailable, "Database connection error, please try again later")
-		} else if pgerrcode.IsDataException(pgErr.Code) {
-			return echo.NewHTTPError(http.StatusUnprocessableEntity, "Failure processing request")
-		} else {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Unhandled Postgres error code=%s message=%s", pgErr.Code, pgErr.Message))
-		}
-	}
-
-	return err
+	return r.ShipsHandler.GetShipShipId(ctx, shipId)
 }
