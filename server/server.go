@@ -77,6 +77,7 @@ func StartServer() {
 	}
 
 	e := echo.New()
+	e.Logger.SetHeader("${time_rfc3339} ${level}")
 	e.Use(middleware.Logger(), middleware.Recover(), middleware.TimeoutWithConfig(middleware.TimeoutConfig{
 		ErrorMessage: "Request timed out",
 		Timeout:      60 * time.Second,
@@ -132,6 +133,9 @@ func (r Routes) CreateAgent(ctx echo.Context) error {
 		if nil == response {
 			return echo.NewHTTPError(http.StatusInternalServerError, "SpaceTraders API returned nil response")
 		}
+		if response.HTTPResponse.StatusCode != http.StatusOK {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch status from SpaceTraders API responseCode=%d message=%s", response.HTTPResponse.StatusCode, response.HTTPResponse.Status))
+		}
 
 		nextReset, err := time.Parse(time.RFC3339, response.JSON200.ServerResets.Next)
 		if err != nil {
@@ -142,13 +146,15 @@ func (r Routes) CreateAgent(ctx echo.Context) error {
 		*a.ExpiresOn = openapi_types.Date{Time: nextReset}
 	}
 
+	date := pgtype.Date{Time: a.ExpiresOn.Time, Valid: true}
 	agent, err := r.DBOperations.queries.InsertAgent(ctx.Request().Context(), domain.InsertAgentParams{
 		CallSign:     a.CallSign,
 		Faction:      a.Faction,
 		Headquarters: a.Headquarters,
 		Credits:      int32(*a.Credits),
-		ExpiresOn:    pgtype.Date{Time: a.ExpiresOn.Time},
+		ExpiresOn:    date,
 	})
+
 	if err != nil {
 		return err
 	}

@@ -18,7 +18,8 @@
 ```bash
 make doctor
 make deps # if required
-make build
+make generate build
+make db migrate
 make run
 ```
 
