@@ -14,3 +14,6 @@ Content-Type: application/json
     "credits": 175000,
     "faction": "COSMIC"
 }
+
+###
+GET http://localhost:8080/agents/SHUGGIE

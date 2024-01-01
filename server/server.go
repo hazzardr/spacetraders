@@ -8,10 +8,13 @@ import (
 	restApi "github.com/hazzardr/spacetraders/generated/api"
 	"github.com/hazzardr/spacetraders/generated/domain"
 	spaceTraders "github.com/hazzardr/spacetraders/generated/spacetraders"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"log"
 	"log/slog"
@@ -163,11 +166,33 @@ func (r Routes) CreateAgent(ctx echo.Context) error {
 }
 
 func (r Routes) GetAgentCallSign(ctx echo.Context, callSign string) error {
-	//TODO implement me
-	panic("implement me")
+	//TODO: clean input
+	agent, err := r.DBOperations.queries.GetAgentByCallsign(ctx.Request().Context(), callSign)
+	if err != nil {
+		return handlePGError(err)
+	}
+
+	return ctx.JSON(http.StatusOK, agent)
 }
 
 func (r Routes) GetShipShipId(ctx echo.Context, shipId int) error {
 	//TODO implement me
 	panic("implement me")
+}
+
+func handlePGError(err error) error {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		if pgErr.Code == pgerrcode.UniqueViolation {
+			return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Cannot insert new record: %s", pgErr.Message))
+		} else if pgerrcode.IsConnectionException(pgErr.Code) {
+			return echo.NewHTTPError(http.StatusServiceUnavailable, "Database connection error, please try again later")
+		} else if pgerrcode.IsDataException(pgErr.Code) {
+			return echo.NewHTTPError(http.StatusUnprocessableEntity, "Failure processing request")
+		} else {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Unhandled Postgres error code=%s message=%s", pgErr.Code, pgErr.Message))
+		}
+	}
+
+	return err
 }
