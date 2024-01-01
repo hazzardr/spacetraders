@@ -13,6 +13,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/spf13/viper"
+	"html/template"
+	"io"
 	"log"
 	"log/slog"
 	"net/http"
@@ -30,6 +32,14 @@ type Config struct {
 type Routes struct {
 	AgentsHandler *handlers.AgentsHandler
 	ShipsHandler  *handlers.ShipsHandler
+}
+
+type Template struct {
+	templates *template.Template
+}
+
+func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+	return t.templates.ExecuteTemplate(w, name, data)
 }
 
 func newDBO(dbUrl string) (*database.Operations, error) {
@@ -78,10 +88,13 @@ func StartServer() {
 
 	e := echo.New()
 	e.Logger.SetHeader("${time_rfc3339} ${level}")
-	e.Use(middleware.Logger(), middleware.Recover(), middleware.TimeoutWithConfig(middleware.TimeoutConfig{
-		ErrorMessage: "Request timed out",
-		Timeout:      60 * time.Second,
-	}))
+	e.Use(
+		middleware.Logger(),
+		middleware.Recover(),
+		middleware.TimeoutWithConfig(middleware.TimeoutConfig{
+			ErrorMessage: "Request timed out",
+			Timeout:      60 * time.Second,
+		}))
 
 	dbo, err := newDBO(config.DatabaseUrl)
 	if err != nil {
@@ -90,6 +103,7 @@ func StartServer() {
 
 	stc, err := newSpaceTradersClient(config)
 
+	// Register openapi routes
 	restApi.RegisterHandlers(e, &Routes{
 		&handlers.AgentsHandler{
 			DBOperations:      dbo,
@@ -100,6 +114,9 @@ func StartServer() {
 			SpaceTraderClient: stc,
 		},
 	})
+
+	// Register UI routes
+	e.Static("/", "frontend/static")
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)

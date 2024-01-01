@@ -24,3 +24,5 @@ generated/
 .idea/
 .env
 spacetraders
+
+node_modules/
