@@ -1,10 +1,3 @@
-"symbol": "SHUGGIE",
-"headquarters": "X1-JN40-A1",
-"credits": 175000,
-"startingFaction": "COSMIC",
-
-###
-
 POST http://localhost:8080/agents
 Content-Type: application/json
 

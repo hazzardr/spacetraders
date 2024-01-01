@@ -6,7 +6,7 @@ import (
 	restApi "github.com/hazzardr/spacetraders/generated/api"
 	"github.com/hazzardr/spacetraders/generated/domain"
 	spaceTraders "github.com/hazzardr/spacetraders/generated/spacetraders"
-	"github.com/hazzardr/spacetraders/server"
+	"github.com/hazzardr/spacetraders/server/database"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
 	"net/http"
@@ -15,7 +15,7 @@ import (
 
 type AgentsHandler struct {
 	SpaceTraderClient *spaceTraders.ClientWithResponses
-	DBOperations      *server.DatabaseOperations
+	DBOperations      *database.Operations
 }
 
 func (h AgentsHandler) CreateAgent(ctx echo.Context) error {

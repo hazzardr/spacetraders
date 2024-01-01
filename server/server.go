@@ -7,13 +7,11 @@ import (
 	restApi "github.com/hazzardr/spacetraders/generated/api"
 	"github.com/hazzardr/spacetraders/generated/domain"
 	spaceTraders "github.com/hazzardr/spacetraders/generated/spacetraders"
+	"github.com/hazzardr/spacetraders/server/database"
 	"github.com/hazzardr/spacetraders/server/handlers"
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"log"
 	"log/slog"
@@ -29,34 +27,12 @@ type Config struct {
 	AgentToken          string `mapstructure:"AGENT_TOKEN"`
 }
 
-type DatabaseOperations struct {
-	DB      *pgxpool.Pool
-	Queries *domain.Queries
-}
-
-func (dbo *DatabaseOperations) HandlePGError(err error) error {
-	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) {
-		if pgErr.Code == pgerrcode.UniqueViolation {
-			return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("Cannot insert new record. code=%s, message=%s", pgErr.Code, pgErr.Message))
-		} else if pgerrcode.IsConnectionException(pgErr.Code) {
-			return echo.NewHTTPError(http.StatusServiceUnavailable, fmt.Sprintf("Database connection error, please try again later. code=%s, message=%s", pgErr.Code, pgErr.Message))
-		} else if pgerrcode.IsDataException(pgErr.Code) {
-			return echo.NewHTTPError(http.StatusUnprocessableEntity, fmt.Sprintf("Failure processing request. code=%s, message=%s", pgErr.Code, pgErr.Message))
-		} else {
-			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Unhandled Postgres error. code=%s message=%s", pgErr.Code, pgErr.Message))
-		}
-	}
-
-	return err
-}
-
 type Routes struct {
 	AgentsHandler *handlers.AgentsHandler
 	ShipsHandler  *handlers.ShipsHandler
 }
 
-func newDBO(dbUrl string) (*DatabaseOperations, error) {
+func newDBO(dbUrl string) (*database.Operations, error) {
 	conn, err := pgxpool.New(context.Background(), dbUrl)
 	if err != nil {
 		return nil, err
@@ -69,7 +45,7 @@ func newDBO(dbUrl string) (*DatabaseOperations, error) {
 
 	q := domain.New(conn)
 
-	return &DatabaseOperations{DB: conn, Queries: q}, nil
+	return &database.Operations{DB: conn, Queries: q}, nil
 }
 
 func newSpaceTradersClient(config Config) (*spaceTraders.ClientWithResponses, error) {
