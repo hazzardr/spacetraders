@@ -4,6 +4,7 @@ info:
   version: '0.1'
   servers:
     - url: 'http://localhost:8080'
+basePath: '/api/v1'
 paths:
   '/agents':
     post:

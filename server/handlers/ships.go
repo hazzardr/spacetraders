@@ -6,12 +6,12 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type ShipsHandler struct {
+type ShipsAPIHandler struct {
 	SpaceTraderClient *spaceTraders.ClientWithResponses
 	DBOperations      *database.Operations
 }
 
-func (h ShipsHandler) GetShipShipId(ctx echo.Context, id int) error {
+func (h ShipsAPIHandler) GetShipShipId(ctx echo.Context, id int) error {
 	//TODO: Implement
 	panic("implement me")
 }

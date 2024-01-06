@@ -29,9 +29,9 @@ type Config struct {
 	AgentToken          string `mapstructure:"AGENT_TOKEN"`
 }
 
-type Routes struct {
-	AgentsHandler *handlers.AgentsHandler
-	ShipsHandler  *handlers.ShipsHandler
+type APIRoutes struct {
+	AgentsHandler *handlers.AgentsAPIHandler
+	ShipsHandler  *handlers.ShipsAPIHandler
 }
 
 type Template struct {
@@ -98,25 +98,39 @@ func StartServer() {
 
 	dbo, err := newDBO(config.DatabaseUrl)
 	if err != nil {
-		panic(err)
+		log.Fatal("Failed to connect to the database. Is it running?", err)
 	}
 
 	stc, err := newSpaceTradersClient(config)
+	if err != nil {
+		log.Fatal("Failed to initialize client for SpaceTraders API", err)
+	}
 
+	api := &APIRoutes{
+		&handlers.AgentsAPIHandler{
+			SpaceTraderClient: stc,
+			DBOperations:      dbo,
+		},
+		&handlers.ShipsAPIHandler{
+			DBOperations:      dbo,
+			SpaceTraderClient: stc,
+		},
+	}
 	// Register openapi routes
-	restApi.RegisterHandlers(e, &Routes{
-		&handlers.AgentsHandler{
-			DBOperations:      dbo,
-			SpaceTraderClient: stc,
-		},
-		&handlers.ShipsHandler{
-			DBOperations:      dbo,
-			SpaceTraderClient: stc,
-		},
-	})
+	restApi.RegisterHandlersWithBaseURL(e, api, "/api/v1")
 
-	// Register UI routes
-	e.Static("/", "frontend/static")
+	// render frontend templates
+	t := &Template{
+		templates: template.Must(template.ParseGlob("frontend/templates/*.gohtml")),
+	}
+	e.Renderer = t
+	frontend := &handlers.Frontend{
+		AgentsHandler: api.AgentsHandler,
+		ShipsHandler:  api.ShipsHandler,
+	}
+
+	// Register frontend routes
+	e.GET("/", frontend.LandingPage)
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
@@ -131,14 +145,14 @@ func StartServer() {
 	log.Println("Server stopped")
 }
 
-func (r Routes) CreateAgent(ctx echo.Context) error {
+func (r APIRoutes) CreateAgent(ctx echo.Context) error {
 	return r.AgentsHandler.CreateAgent(ctx)
 }
 
-func (r Routes) GetAgentCallSign(ctx echo.Context, callSign string) error {
+func (r APIRoutes) GetAgentCallSign(ctx echo.Context, callSign string) error {
 	return r.AgentsHandler.GetAgentCallSign(ctx, callSign)
 }
 
-func (r Routes) GetShipShipId(ctx echo.Context, shipId int) error {
+func (r APIRoutes) GetShipShipId(ctx echo.Context, shipId int) error {
 	return r.ShipsHandler.GetShipShipId(ctx, shipId)
 }

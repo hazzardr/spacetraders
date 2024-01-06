@@ -13,12 +13,12 @@ import (
 	"time"
 )
 
-type AgentsHandler struct {
+type AgentsAPIHandler struct {
 	SpaceTraderClient *spaceTraders.ClientWithResponses
 	DBOperations      *database.Operations
 }
 
-func (h AgentsHandler) CreateAgent(ctx echo.Context) error {
+func (h AgentsAPIHandler) CreateAgent(ctx echo.Context) error {
 	a := new(restApi.AgentRequest)
 	if err := ctx.Bind(a); err != nil {
 		return err
@@ -67,7 +67,7 @@ func (h AgentsHandler) CreateAgent(ctx echo.Context) error {
 	return ctx.JSON(http.StatusCreated, agent)
 }
 
-func (h AgentsHandler) GetAgentCallSign(ctx echo.Context, sign string) error {
+func (h AgentsAPIHandler) GetAgentCallSign(ctx echo.Context, sign string) error {
 	//TODO: clean input
 	agent, err := h.DBOperations.Queries.GetAgentByCallsign(ctx.Request().Context(), sign)
 	if err != nil {
