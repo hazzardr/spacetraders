@@ -29,11 +29,29 @@ type Config struct {
 	AgentToken          string `mapstructure:"AGENT_TOKEN"`
 }
 
+// APIRoutes is a struct that holds all the handlers for the API routes adhering to the OpenAPI spec
 type APIRoutes struct {
 	AgentsHandler *handlers.AgentsAPIHandler
 	ShipsHandler  *handlers.ShipsAPIHandler
 }
 
+func (r APIRoutes) CreateAgent(ctx echo.Context) error {
+	return r.AgentsHandler.CreateAgent(ctx)
+}
+
+func (r APIRoutes) GetAgentCallSign(ctx echo.Context, callSign string) error {
+	return r.AgentsHandler.GetAgentCallSign(ctx, callSign)
+}
+
+func (r APIRoutes) GetShipShipId(ctx echo.Context, shipId int) error {
+	return r.ShipsHandler.GetShipShipId(ctx, shipId)
+}
+
+func (r APIRoutes) ListAgents(ctx echo.Context) error {
+	return r.AgentsHandler.ListAgents(ctx)
+}
+
+// Template is a custom html/template renderer for Echo framework
 type Template struct {
 	templates *template.Template
 }
@@ -143,16 +161,4 @@ func StartServer() {
 	<-stop
 	dbo.DB.Close()
 	log.Println("Server stopped")
-}
-
-func (r APIRoutes) CreateAgent(ctx echo.Context) error {
-	return r.AgentsHandler.CreateAgent(ctx)
-}
-
-func (r APIRoutes) GetAgentCallSign(ctx echo.Context, callSign string) error {
-	return r.AgentsHandler.GetAgentCallSign(ctx, callSign)
-}
-
-func (r APIRoutes) GetShipShipId(ctx echo.Context, shipId int) error {
-	return r.ShipsHandler.GetShipShipId(ctx, shipId)
 }

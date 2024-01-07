@@ -24,6 +24,20 @@ paths:
                 $ref: '#/components/schemas/Agent'
       operationId: createAgent
       description: Create a new agent
+    get:
+      summary: list agents
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Agent'
+      operationId: listAgents
+      description: List all agents
   '/agents/{callSign}':
     parameters:
       - schema:
