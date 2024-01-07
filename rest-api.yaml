@@ -57,6 +57,25 @@ paths:
                 $ref: '#/components/schemas/Agent'
       operationId: getAgent-callSign
       description: Retrieve a specific agent by call sign
+  '/agents/{callSign}/refresh':
+    parameters:
+      - schema:
+          type: string
+        name: callSign
+        in: path
+        required: true
+    put:
+      summary: refresh agent
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+              $ref: '#/components/schemas/Agent'
+      operationId: refreshAgent-callSign
+      description: Refresh an agent with the spacetraders backend
   '/ships/{ship_id}':
     parameters:
       - schema:

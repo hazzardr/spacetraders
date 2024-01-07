@@ -120,3 +120,68 @@ func (h AgentsAPIHandler) listAgents(ctx context.Context) ([]domain.Spacetraders
 
 	return agents, nil
 }
+
+// RefreshAgentCallSign refreshes the agent with the given call sign and returns the agent in JSON format.
+func (h AgentsAPIHandler) RefreshAgentCallSign(ctx echo.Context, sign string) error {
+	agent, err := h.refreshAgentByCallSign(ctx.Request().Context(), sign)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, agent)
+}
+
+// refreshAgentByCallSign refreshes the agent with the given call sign by calling the SpaceTraders API to get the latest agent info.
+// If the current agent is expired, it creates a new one
+func (h AgentsAPIHandler) refreshAgentByCallSign(ctx context.Context, sign string) (domain.SpacetradersAgent, error) {
+	resp, err := h.SpaceTraderClient.GetAgentWithResponse(ctx, sign)
+
+	if err != nil {
+		return domain.SpacetradersAgent{}, err
+	}
+	if nil == resp {
+		return domain.SpacetradersAgent{}, echo.NewHTTPError(http.StatusInternalServerError, "SpaceTraders API returned nil response")
+	}
+	if resp.HTTPResponse.StatusCode == http.StatusNotFound {
+		// Agent doesn't exist, create a new one with spacetraders
+		email := "rbrianhazzard+spacetraders@gmail.com"
+		req := spaceTraders.RegisterJSONRequestBody{
+			Email:   &email,
+			Faction: "COSMIC",
+			Symbol:  sign,
+		}
+		response, err := h.SpaceTraderClient.RegisterWithResponse(ctx, req)
+		if err != nil {
+			return domain.SpacetradersAgent{}, err
+		}
+		if nil == response {
+			return domain.SpacetradersAgent{}, echo.NewHTTPError(http.StatusInternalServerError, "SpaceTraders API returned nil response when creating agent")
+		}
+		if response.HTTPResponse.StatusCode != http.StatusCreated {
+			return domain.SpacetradersAgent{}, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to create agent with SpaceTraders API responseCode=%d message=%s", response.HTTPResponse.StatusCode, response.HTTPResponse.Status))
+		}
+
+		rd := response.JSON201.Data
+		credits := new(int)
+		*credits = int(rd.Agent.Credits)
+
+		agent, err := h.createAgent(ctx, restApi.AgentRequest{
+			CallSign:     sign,
+			Faction:      rd.Faction.Name,
+			Headquarters: rd.Agent.Headquarters,
+			Credits:      credits,
+		})
+		if err != nil {
+			return domain.SpacetradersAgent{}, err
+		}
+		return agent, nil
+
+	}
+	if resp.HTTPResponse.StatusCode != http.StatusOK {
+		return domain.SpacetradersAgent{}, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch status from SpaceTraders API responseCode=%d message=%s", response.HTTPResponse.StatusCode, response.HTTPResponse.Status))
+	}
+
+	agent, err := h.getAgentByCallSign(ctx, resp.JSON200.Data.Symbol)
+
+	return agent, nil
+}

@@ -51,6 +51,10 @@ func (r APIRoutes) ListAgents(ctx echo.Context) error {
 	return r.AgentsHandler.ListAgents(ctx)
 }
 
+func (r APIRoutes) RefreshAgentCallSign(ctx echo.Context, callSign string) error {
+	return r.AgentsHandler.RefreshAgentCallSign(ctx, callSign)
+}
+
 // Template is a custom html/template renderer for Echo framework
 type Template struct {
 	templates *template.Template
