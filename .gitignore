@@ -22,7 +22,7 @@ go.work
 
 generated/
 .idea/
-.env
+.env*
 spacetraders
 
 node_modules/

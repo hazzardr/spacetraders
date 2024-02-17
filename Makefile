@@ -1,7 +1,7 @@
 PROJECT_NAME := "spacetraders"
 EXEC_NAME := spacetraders
 SPACE_TRADERS_OPENAPI_URL := "https://stoplight.io/api/v1/projects/spacetraders/spacetraders/nodes/reference/SpaceTraders.json?fromExportButton=true&snapshotType=http_service&deref=optimizedBundle"
-POSTGRES_URL := "spacetraders:spacetraders@localhost:5432/spacetraders?sslmode=disable"
+POSTGRES_URL ?= "spacetraders:spacetraders@localhost:5432/spacetraders?sslmode=disable"
 
 .PHONY: help ## print this
 help:
@@ -96,7 +96,7 @@ db:
 .PHONY: migrate ## run database migrations
 migrate:
 	@echo "Running migrations..."
-	@migrate -path ./db/migrations -database "postgresql://$(POSTGRES_URL)" up
+	@migrate -path ./db/migrations -database "$(POSTGRES_URL)" up
 	@echo "Done!"
 
 .PHONY: migrate-down ## tear down database migrations

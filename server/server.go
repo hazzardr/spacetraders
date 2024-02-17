@@ -96,7 +96,7 @@ func newSpaceTradersClient(config Config) (*spaceTraders.ClientWithResponses, er
 }
 
 func StartServer() {
-	viper.SetConfigFile(".env")
+	viper.SetConfigFile(".env.local")
 	err := viper.ReadInConfig()
 	if err != nil {
 		panic(fmt.Errorf("failed to load configuration, error=%w", err))
