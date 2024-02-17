@@ -1,6 +1,6 @@
 module github.com/hazzardr/spacetraders
 
-go 1.21.0
+go 1.21.7
 
 require (
 	github.com/deepmap/oapi-codegen v1.16.2

@@ -6,6 +6,7 @@ create table if not exists spacetraders.agents (
     faction text not null,
     headquarters text not null,
     credits integer not null,
+    expires_on date not null, --expiration date for the agent, typically every two weeks,
     email text not null -- email is used to preserve callsign across resets
 );
 

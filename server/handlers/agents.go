@@ -178,7 +178,7 @@ func (h AgentsAPIHandler) refreshAgentByCallSign(ctx context.Context, sign strin
 
 	}
 	if resp.HTTPResponse.StatusCode != http.StatusOK {
-		return domain.SpacetradersAgent{}, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch status from SpaceTraders API responseCode=%d message=%s", response.HTTPResponse.StatusCode, response.HTTPResponse.Status))
+		return domain.SpacetradersAgent{}, echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to fetch status from SpaceTraders API responseCode=%d message=%s", resp.HTTPResponse.StatusCode, resp.HTTPResponse.Status))
 	}
 
 	agent, err := h.getAgentByCallSign(ctx, resp.JSON200.Data.Symbol)
