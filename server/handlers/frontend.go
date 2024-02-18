@@ -13,3 +13,7 @@ type Frontend struct {
 func (f *Frontend) LandingPage(c echo.Context) error {
 	return c.Render(http.StatusOK, "hello", "text!!")
 }
+
+func (f *Frontend) CreateAgent(c echo.Context) error {
+	return f.AgentsHandler.CreateAgent(c)
+}

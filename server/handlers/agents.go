@@ -15,7 +15,7 @@ import (
 )
 
 // AgentsAPIHandler handles requests for the /agents endpoints. Its package public functions serve traditional REST endpoints served with JSON.
-// These should ahdere to the OpenAPI spec via the generated code satisfying the interface defined in server/generated/api/server_gen.go.
+// These should adhere to the OpenAPI spec via the generated code satisfying the interface defined in server/generated/api/server_gen.go.
 type AgentsAPIHandler struct {
 	SpaceTraderClient *spaceTraders.ClientWithResponses
 	DBOperations      *database.Operations
